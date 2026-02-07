@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="70%">
+      <stop offset="0%" stop-color="#0f2430"/>
+      <stop offset="100%" stop-color="#08131a"/>
+    </radialGradient>
+    <linearGradient id="ship" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b6f6ff"/>
+      <stop offset="100%" stop-color="#5ad2e8"/>
+    </linearGradient>
+    <linearGradient id="thrust" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffe08a" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ff7040" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="256" height="256" rx="48" fill="url(#bg)"/>
+
+  <g opacity="0.55" fill="#8dd9e6">
+    <circle cx="42" cy="38" r="2.6"/>
+    <circle cx="70" cy="58" r="1.8"/>
+    <circle cx="28" cy="84" r="1.6"/>
+    <circle cx="214" cy="42" r="2.4"/>
+    <circle cx="182" cy="28" r="1.7"/>
+    <circle cx="222" cy="88" r="1.5"/>
+    <circle cx="192" cy="220" r="2.1"/>
+    <circle cx="48" cy="204" r="2.0"/>
+  </g>
+
+  <g transform="translate(128 128) rotate(-18)">
+    <polygon points="-16,26 0,66 16,26" fill="url(#thrust)" stroke="#ffbf66" stroke-width="2"/>
+    <polygon points="0,-78 46,42 0,20 -46,42" fill="none" stroke="url(#ship)" stroke-width="10" stroke-linejoin="round"/>
+    <line x1="-10" y1="14" x2="10" y2="14" stroke="#8af1ff" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>

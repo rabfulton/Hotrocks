@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=HotRocks
+Comment=Arcade asteroid shooter
+Exec=hotrocks
+Path=/usr/share/hotrocks
+Icon=hotrocks
+Terminal=false
+Categories=Game;ArcadeGame;
+StartupNotify=false
