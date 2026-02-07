@@ -2,6 +2,8 @@
 
 Arcade asteroid-style shooter using SDL2 + OpenGL.
 
+![Hotrocks screenshot](screenshots/screenshot.png)
+
 ## Build
 
 ### Dependencies
