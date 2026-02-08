@@ -31,8 +31,12 @@ int main_menu(GLuint tex){
 	int colour = 0;
 	int selected = 0;
 	int quit = 0;
+	int launch_game = 0;
 	SDL_Event e;
 	int menu_mode = 0;
+
+	SDL_SetRelativeMouseMode(0);
+	SDL_ShowCursor(SDL_ENABLE);
 
 	enum{
 		MENU_MAIN,
@@ -73,6 +77,21 @@ int main_menu(GLuint tex){
 		}
 
 		while (SDL_PollEvent(&e) != 0){
+			if (e.type == SDL_MOUSEMOTION){
+				if (y_step > 0){
+					int mx = 0;
+					int my = 0;
+					SDL_GetMouseState(&mx, &my);
+					int idx = (my - y_top + y_step / 2) / y_step;
+					if (idx < 0) idx = 0;
+					if (idx >= item_count) idx = item_count - 1;
+					selected = idx;
+				}
+			}
+			if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT){
+				e.type = SDL_KEYDOWN;
+				e.key.keysym.sym = SDLK_RETURN;
+			}
 	
 			// Main menu options here.
 			//--------------------------
@@ -82,8 +101,10 @@ int main_menu(GLuint tex){
 					
 				case SDLK_RETURN: case SDLK_SPACE:
 					play_sound(FIRE, 0);
-					if (selected == 0)
-						return mode;
+					if (selected == 0){
+						launch_game = 1;
+						quit = 1;
+					}
 					else if (selected == 1){		// goto config menu
 						s = sc;
 						menu_mode = MENU_CONFIG;
@@ -290,9 +311,15 @@ int main_menu(GLuint tex){
 		SDL_GL_SwapWindow( mywindow );
 		SDL_Delay(50);
 	}
+
+	SDL_ShowCursor(SDL_DISABLE);
+	SDL_SetRelativeMouseMode(1);
 	
 	if (quit == 1)
-		close_sdl();
+		if (!launch_game)
+			close_sdl();
+	if (launch_game)
+		return mode;
 	return (mode);
 }
 

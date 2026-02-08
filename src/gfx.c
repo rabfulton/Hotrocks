@@ -720,6 +720,25 @@ void draw_shield(ship_t *sh){
 	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
+void draw_enemy_shield(ship_t *sh){
+
+	static float ship_shield[68] = {0, 0, 16, 0, 15, 3, 14, 6, 13, 9, 11, 11, 8, 13, 5, 14, 2, 15, 0, 15,
+	-3, 15, -6, 14, -9, 12, -11, 10, -13, 8, -15, 5, -15, 2, -15, 0,
+	-15, -4, -14, -7, -12, -9, -10, -12, -7, -13, -4, -15, -1, -15,
+	1, -15, 4, -15, 7, -14, 10, -12, 12, -10, 14, -7, 15, -4, 15, -1, 16, 0};
+
+	glColor4ub(80, 255, 130, 78);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(2, GL_FLOAT, 0, ship_shield);
+	glPushMatrix();
+		float ship_scale = world_scale_from_window();
+		glTranslatef(sh->position.x, sh->position.y, 0);
+		glScalef(ship_scale, ship_scale, 0);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 34);
+	glPopMatrix();
+	glDisableClientState(GL_VERTEX_ARRAY);
+}
+
 void draw_bullets(bullet_t *bulls){
 
 	GLfloat vertices[2*MAX_BULLETS];

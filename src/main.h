@@ -112,6 +112,8 @@ typedef struct{	ship_t sh;
 				float target;
 				float target_mag;
 				int skill;
+				int shield_uses;
+				Uint32 shield_until;
 				}enemy_t;
 
 typedef struct{ float age;
@@ -168,6 +170,7 @@ void create_bullet_rel(bullet_t *bulls, ship_t *sh);
 void split_asteroid(asteroid_t *field, int a);
 void collision_detect(asteroid_t *field, Player_t *, enemy_t *en);
 void dual_collisions(Player_t *, Player_t *);
+void collide2(Vector *v1, Vector *p1, int s1, Vector *v2, Vector *p2, int s2);
 void play_sound(int index, int loop);
 void kill_enemy(enemy_t *en, int id);
 // MOVE
@@ -180,6 +183,7 @@ void move_particles(void);
 void draw_asteroids(asteroid_t *field);
 void draw_ship(ship_t *sh, int type);
 void draw_shield(ship_t *sh);
+void draw_enemy_shield(ship_t *sh);
 void draw_bullets(bullet_t *bulls);
 void draw_scorebar(Player_t *, int mode);
 void draw_background(GLuint);

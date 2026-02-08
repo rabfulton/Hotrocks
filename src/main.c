@@ -504,6 +504,8 @@ int main(int argc, char *argv[]){
 		if (no_of_enemy > 0){
 			for (int i = 0; i < no_of_enemy; ++i){
 				draw_ship(&en[i].sh, 2);
+				if (en[i].sh.shield == 1)
+					draw_enemy_shield(&en[i].sh);
 				draw_bullets(en[i].bulls);
 			}	
 		}
@@ -1185,10 +1187,30 @@ void collision_detect(asteroid_t *field, Player_t *p, enemy_t *en){
 				xdiff = p->bulls[j].position.x - en[k].sh.position.x;
 				ydiff = p->bulls[j].position.y - en[k].sh.position.y;
 				distance2 = xdiff * xdiff + ydiff * ydiff;
-				if (distance2 < 140.0f * screen.obj_scale_factor){
-					kill_enemy(en, k);
-					p->score += 25;
-					p->bulls[j].position.x = -99999;
+				// Enemy may proactively shield against incoming fire (25% chance).
+				if (en[k].sh.shield == 0 && en[k].shield_uses > 0){
+					float dx = en[k].sh.position.x - p->bulls[j].position.x;
+					float dy = en[k].sh.position.y - p->bulls[j].position.y;
+					float closing = dx * p->bulls[j].velocity.x + dy * p->bulls[j].velocity.y;
+					float shield_chance = (no_of_asteroids == 0) ? 0.50f : 0.25f;
+					// Last-resort trigger: bullet is close and approaching.
+					if (closing > 20.0f && distance2 < 180.0f * screen.obj_scale_factor){
+						if (((float)rand()/(float)RAND_MAX) < shield_chance){
+							en[k].sh.shield = 1;
+							en[k].shield_uses -= 1;
+							en[k].shield_until = SDL_GetTicks() + 4000;
+						}
+					}
+				}
+					if (distance2 < 140.0f * screen.obj_scale_factor){
+						if (en[k].sh.shield == 1){
+							p->bulls[j].position.x = -99999;
+						}
+						else{
+							kill_enemy(en, k);
+						p->score += 25;
+						p->bulls[j].position.x = -99999;
+					}
 				}
 			}
 		}	

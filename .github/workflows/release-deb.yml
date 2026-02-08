@@ -1,0 +1,91 @@
+name: Release DEB
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            make \
+            libsdl2-dev \
+            libsdl2-mixer-dev \
+            libsdl2-image-dev \
+            libsdl2-ttf-dev \
+            libglew-dev \
+            libopenmpt-dev \
+            libglu1-mesa-dev \
+            ruby \
+            ruby-dev \
+            rpm
+          sudo gem install --no-document fpm
+
+      - name: Build
+        run: |
+          make clean
+          make
+
+      - name: Create package staging root
+        run: |
+          set -eux
+          rm -rf pkgroot dist
+          mkdir -p \
+            pkgroot/usr/share/hotrocks \
+            pkgroot/usr/bin \
+            pkgroot/usr/share/applications \
+            pkgroot/usr/share/icons/hicolor/scalable/apps \
+            pkgroot/usr/share/licenses/hotrocks \
+            dist
+
+          cp -a HotRocks pkgroot/usr/share/hotrocks/
+          cp -a data pkgroot/usr/share/hotrocks/
+          cp -a mods pkgroot/usr/share/hotrocks/
+          cp -a default.dat pkgroot/usr/share/hotrocks/default.dat
+          cp -a highscore.dat pkgroot/usr/share/hotrocks/highscore.dat
+          cp -a hotrocks.desktop pkgroot/usr/share/applications/hotrocks.desktop
+          cp -a hotrocks.svg pkgroot/usr/share/icons/hicolor/scalable/apps/hotrocks.svg
+          cp -a LICENSE pkgroot/usr/share/licenses/hotrocks/LICENSE
+
+          cat > pkgroot/usr/bin/hotrocks << 'EOF'
+          #!/bin/sh
+          cd /usr/share/hotrocks || exit 1
+          exec ./HotRocks "$@"
+          EOF
+          chmod 755 pkgroot/usr/bin/hotrocks
+
+      - name: Build .deb
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          set -eux
+          VERSION="${TAG_NAME#v}"
+          fpm -s dir -t deb \
+            -n hotrocks \
+            -v "$VERSION" \
+            --architecture amd64 \
+            --license MIT \
+            --url "$REPO_URL" \
+            --description "SDL2/OpenGL arcade asteroid shooter" \
+            -C pkgroot \
+            -p "dist/hotrocks_${VERSION}_amd64.deb" \
+            .
+
+      - name: Upload .deb to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.deb
+

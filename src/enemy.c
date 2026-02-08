@@ -25,6 +25,7 @@ void plan_get_player(ship_t *sh, enemy_t *en);
 void do_plan(enemy_t *en);
 //void keywait();
 void shoot_player(enemy_t *en);
+static int enemy_activate_shield(enemy_t *en);
 
 void create_enemies(enemy_t *en, int num){
 
@@ -45,6 +46,8 @@ void create_enemies(enemy_t *en, int num){
 	en[i].target_mag = 0.1;
 	en[i].target = 0;
 	en[i].skill = 2;
+	en[i].shield_uses = 3;
+	en[i].shield_until = 0;
 
 	for (int j = 0; j < MAX_BULLETS; ++j){
 		en[i].bulls[j].position.x = -99999;
@@ -61,6 +64,10 @@ void move_enemies(enemy_t *en, asteroid_t *field, Player_t *p, int mode){
 	near_asteroid(en, field);
 			
 	for (int i = 0; i < no_of_enemy; ++i){
+		if (en[i].sh.shield && SDL_GetTicks() >= en[i].shield_until){
+			en[i].sh.shield = 0;
+		}
+
 		if (en[i].sh.position.x > screen.width + 12)
 			en[i].sh.position.x = -12;
 		
@@ -149,9 +156,10 @@ void near_asteroid(enemy_t *en, asteroid_t *field){
 	// avoiding asteroid is top priority.
 	
 	float xdiff, ydiff;
-	float distance, overlap, smallest;
+	float distance, smallest;
 	int s = 0;
 	int dead = 0;
+	const float asteroid_radius = 4.5f;
 	
 	for (int j = 0; j < no_of_enemy; ++j){
 		smallest = 99999;
@@ -160,15 +168,39 @@ void near_asteroid(enemy_t *en, asteroid_t *field){
 			xdiff =  en[j].sh.position.x - field[i].position.x;
 			ydiff =  en[j].sh.position.y - field[i].position.y;
 			distance = sqrt(xdiff * xdiff + ydiff * ydiff);
-			overlap = distance - field[i].size * 5 * screen.obj_scale_factor - 12 * screen.obj_scale_factor;
+			float ai_overlap = distance - field[i].size * 5 * screen.obj_scale_factor - 12 * screen.obj_scale_factor;
+			float distance2 = xdiff * xdiff + ydiff * ydiff;
+			float player_style_overlap = distance2
+				- field[i].size * field[i].size * asteroid_radius * asteroid_radius
+				- 144.0f
+				- 2.0f * field[i].size * asteroid_radius * 10.0f;
 			if (smallest > distance){
 				smallest = distance;
 				s = i;
 			}
-			if (overlap < 0){
-				dead = 1;
+			// If an asteroid is close and approaching, enemy may spend a shield burst.
+			if (en[j].sh.shield == 0 && en[j].shield_uses > 0){
+				float relx = field[i].position.x - en[j].sh.position.x;
+				float rely = field[i].position.y - en[j].sh.position.y;
+				float relvx = field[i].velocity.x - en[j].sh.velocity.x;
+				float relvy = field[i].velocity.y - en[j].sh.velocity.y;
+				float closing = relx * relvx + rely * relvy;
+				// Last-resort trigger: very close and still closing.
+				if (ai_overlap < 20.0f && closing < -5.0f){
+					enemy_activate_shield(&en[j]);
+				}
+			}
+			// Actual collision uses same overlap logic players use.
+			if (player_style_overlap < 0){
+				if (en[j].sh.shield || enemy_activate_shield(&en[j])){
+					collide2(&field[i].velocity, &field[i].position, field[i].size, &en[j].sh.velocity, &en[j].sh.position, 1);
+					en[j].plan = avoidsh;
+				}
+				else{
+					dead = 1;
+				}
 				break;
-			}			
+			}
 		}
 		if (dead){
 			kill_enemy(en, j);
@@ -270,6 +302,17 @@ void shoot_player(enemy_t *en){
 	}
 }
 
+static int enemy_activate_shield(enemy_t *en){
+
+	if (en->sh.shield || en->shield_uses <= 0)
+		return 0;
+
+	en->sh.shield = 1;
+	en->shield_uses -= 1;
+	en->shield_until = SDL_GetTicks() + 4000;
+	return 1;
+}
+
 //void keywait(){
 
 	//SDL_Event e;
@@ -281,4 +324,3 @@ void shoot_player(enemy_t *en){
 		//SDL_Delay(50);
 	//}
 //}
-
