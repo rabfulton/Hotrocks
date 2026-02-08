@@ -610,19 +610,38 @@ void draw_scorebar(Player_t *p, int mode){
 
 void draw_asteroids(asteroid_t *field){
 
-	static GLfloat colors[44] = {  0.9f, 0.3f, 0.6f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f,1.0f,
-									0.5f, 0.3f, 0.0f, 1.0f};
+	static const GLfloat base_colors[44] = {
+		0.9f, 0.3f, 0.6f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f,
+		0.5f, 0.3f, 0.0f, 1.0f
+	};
+	GLfloat colors[44];
+	const float t = SDL_GetTicks() * 0.0015f;
 	
 	for (int i = 0; i < no_of_asteroids; i++){
+		float world_scale = world_scale_from_window();
+		float base_size = field[i].size / world_scale;
+		if (base_size < 3.0f) base_size = 3.0f;
+		if (base_size > 12.0f) base_size = 12.0f;
+		float size_t = (base_size - 3.0f) / 9.0f;           // 0 small -> 1 large
+		float size_brightness = 1.18f - 0.23f * size_t;     // small asteroids brighter
+		// Subtle, slow pulse with per-asteroid phase offset.
+		float pulse = 0.88f + 0.12f * sinf(t + i * 0.7f);
+		float brightness = pulse * size_brightness;
+		for (int c = 0; c < 44; c += 4){
+			colors[c + 0] = fminf(1.0f, base_colors[c + 0] * brightness);
+			colors[c + 1] = fminf(1.0f, base_colors[c + 1] * brightness);
+			colors[c + 2] = fminf(1.0f, base_colors[c + 2] * brightness);
+			colors[c + 3] = base_colors[c + 3];
+		}
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
