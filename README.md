@@ -102,7 +102,7 @@ Binary output:
 make clean
 ```
 
-## Run
+### Run
 
 Run from the project root so relative paths resolve:
 
@@ -110,14 +110,11 @@ Run from the project root so relative paths resolve:
 ./HotRocks
 ```
 
-The game expects:
+## Pre-emptive FAQ
 
-- assets in `./data`
-- bundled module music in `./mods`
-- user module music in `$XDG_DATA_HOME/hotrocks/mods`
-- config in `$XDG_CONFIG_HOME/hotrocks/config.dat` (or `~/.config/hotrocks/config.dat`)
-- highscores in `$XDG_DATA_HOME/hotrocks/highscore.dat` (or `~/.local/share/hotrocks/highscore.dat`)
-
-## Packaging (Arch Linux)
-
-A `PKGBUILD` is included in the repository root.
+### My teacher said that in space no one can hear you scream and that sounds do not propagate in space
+This is a common misconception spread on reddit.
+### I am certain my bullet hit an enemy ship, but it did not explode!
+Listen kid, space is hard and life is not fair.
+### How do I use the teleport function when using the mouse?
+You would have to be completely insane to ever use the teleport function, there's no telling where you could end up.
