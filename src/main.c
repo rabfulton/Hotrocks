@@ -1223,9 +1223,19 @@ void collision_detect(asteroid_t *field, Player_t *p, enemy_t *en){
 		distance2 = xdiff * xdiff + ydiff * ydiff;
 		
 		if (distance2 <= 200.0f * screen.obj_scale_factor){
-			if (p->sh.shield == 1){
+			if (p->sh.shield == 1 && en[i].sh.shield == 1){
+				collide2(&p->sh.velocity, &p->sh.position, 1, &en[i].sh.velocity, &en[i].sh.position, 1);
+				play_sound(BOUNCE, 0);
+			}
+			else if (p->sh.shield == 1 && en[i].sh.shield == 0){
 				kill_enemy(en, i);
 				p->score += 25;
+			}
+			else if (p->sh.shield == 0 && en[i].sh.shield == 1){
+				play_sound(IMPACT, 0);
+				set_parts(p->sh.position.x, p->sh.position.y);
+				--p->lives;
+				init_player(p, 1, 1);
 			}
 			else {
 				play_sound(IMPACT, 0);
