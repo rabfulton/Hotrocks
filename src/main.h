@@ -144,6 +144,7 @@ int init_sdl();
 
 void initGL();
 void close_sdl();
+void save_screenshot_home(void);
 void init_sound();
 void update_music_player(void);
 void shutdown_music_player(void);

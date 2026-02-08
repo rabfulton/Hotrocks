@@ -1,4 +1,5 @@
 #include "main.h"
+#include <stdlib.h>
 
 SDL_GLContext gContext;
 SDL_Window* mywindow = NULL;			
@@ -319,6 +320,51 @@ void close_sdl(){
 	SDL_Quit();
 }
 
+void save_screenshot_home(void){
+
+	int w = 0;
+	int h = 0;
+	SDL_GL_GetDrawableSize(mywindow, &w, &h);
+	if (w <= 0 || h <= 0)
+		SDL_GetWindowSize(mywindow, &w, &h);
+	if (w <= 0 || h <= 0)
+		return;
+
+	size_t len = (size_t)w * (size_t)h * 3u;
+	uint8_t *pixels = malloc(len);
+	if (!pixels){
+		SDL_Log("Screenshot allocation failed.");
+		return;
+	}
+
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glReadBuffer(GL_BACK);
+	glFinish();
+	glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+
+	time_t now = time(NULL);
+	struct tm tm_now;
+	localtime_r(&now, &tm_now);
+	const char *home = getenv("HOME");
+	if (!home || home[0] == '\0')
+		home = ".";
+
+	char path[1024];
+	snprintf(path, sizeof(path),
+		"%s/hotrocks_%04d%02d%02d_%02d%02d%02d.ppm",
+		home,
+		tm_now.tm_year + 1900,
+		tm_now.tm_mon + 1,
+		tm_now.tm_mday,
+		tm_now.tm_hour,
+		tm_now.tm_min,
+		tm_now.tm_sec);
+
+	layer_save_as_ppm(pixels, w, h, path);
+	SDL_Log("Screenshot saved to %s", path);
+	free(pixels);
+}
+
 GLuint load_texture(const char *s){
 
 	GLuint newtexture;
@@ -447,17 +493,8 @@ void layer_save_as_ppm(uint8_t *pixels, int width, int height, const char *file_
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            
-            char pixel[3];
-            // skip the alpha channel
-            ++pixels;
-            pixel[0] = *pixels;
-            ++pixels;
-            pixel[1] = *pixels;
-            ++pixels;
-            pixel[2] = *pixels;
-
-            fwrite(pixel, sizeof(pixel), 1, f);
+            fwrite(pixels, 3, 1, f);
+            pixels += 3;
         }
         
     }

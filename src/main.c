@@ -35,6 +35,7 @@ int dual_bullets;
 int no_of_enemy = 0;
 int no_of_asteroids = 0;
 int no_of_powerups = 0;
+static int screenshot_requested = 0;
 int NO_OF_EXPLOSIONS = 32;		// Must be divisor of MAX_PARTICLES
 int MAX_PARTICLES = 2048;		// Must be multiple of NO_OF_EXPLOSIONS
 int render = 1;
@@ -122,7 +123,7 @@ static int scan_mod_directory(char ***mods_out, int *count_out){
 			return 0;
 		}
 		mods = next;
-		mods[count] = strdup(path);
+		mods[count] = SDL_strdup(path);
 		if (!mods[count]){
 			free_mod_list(mods, count);
 			closedir(dir);
@@ -518,11 +519,15 @@ int main(int argc, char *argv[]){
 				draw_explosion(&explode[i]);
 			}
 		}		
-		draw_background(tex);
-		draw_scorebar(p, mode);
-		
-		SDL_GL_SwapWindow(mywindow);
-		glClear(GL_COLOR_BUFFER_BIT);
+			draw_background(tex);
+			draw_scorebar(p, mode);
+			if (screenshot_requested){
+				save_screenshot_home();
+				screenshot_requested = 0;
+			}
+			
+			SDL_GL_SwapWindow(mywindow);
+			glClear(GL_COLOR_BUFFER_BIT);
 		//SDL_Delay(10);
 	}
 	close_sdl();
@@ -1537,11 +1542,16 @@ int keyboard_events(Player_t *p1, Player_t *p2, int mode){
 
 	while (SDL_PollEvent(&e) != 0){	
 		
-		if (e.type == SDL_KEYDOWN && e.key.repeat == 0){
+			if (e.type == SDL_KEYDOWN && e.key.repeat == 0){
 
-			if (e.key.keysym.sym == SDLK_p){
-				pause_game();
-				return 2;
+					if (e.key.keysym.sym == SDLK_F12){
+						screenshot_requested = 1;
+						continue;
+					}
+
+				if (e.key.keysym.sym == SDLK_p){
+					pause_game();
+					return 2;
 			}
 			
 			// PLAYER 1 CONTROLS - KEYDOWN		
