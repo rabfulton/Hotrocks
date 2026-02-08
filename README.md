@@ -1,4 +1,4 @@
-# HotRocks (Linux)
+# HotRocks (Linux Edition)
 
 Arcade asteroid-style shooter using SDL2 + OpenGL.
 
@@ -112,9 +112,9 @@ Run from the project root so relative paths resolve:
 
 ## Pre-emptive FAQ
 
-### My teacher said that in space no one can hear you scream and that sounds do not propagate in space
+### My teacher said that in space no one can hear you scream and that sound does not propagate
 This is a common misconception spread on reddit.
 ### I am certain my bullet hit an enemy ship, but it did not explode!
 Listen kid, space is hard and life is not fair.
 ### How do I use the teleport function when using the mouse?
-You would have to be completely insane to ever use the teleport function, there's no telling where you could end up.
+You would have to be completely insane to ever use the teleport function, there's no telling where you could end up!
