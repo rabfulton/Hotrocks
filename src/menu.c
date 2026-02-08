@@ -533,6 +533,23 @@ void load_keys(int a){
 	int i, check = 0;
 	FILE * config;							// pointer to config.dat
 	char config_path[PATH_MAX];
+	const int default_layout[11] = {
+		SDLK_LEFT, SDLK_RIGHT, SDLK_UP, SDLK_SPACE, SDLK_DOWN,
+		SDLK_a, SDLK_d, SDLK_w, SDLK_LSHIFT, SDLK_s,
+		1
+	};
+	int layout_valid = 1;
+
+	for (i = 0; i < 11; ++i)
+		layout[i] = default_layout[i];
+	MAX_PARTICLES = 2048;
+	NO_OF_EXPLOSIONS = 16;
+	FSAA = 0;
+	SFX_VOLUME = MIX_MAX_VOLUME;
+	MUSIC_VOLUME = MIX_MAX_VOLUME;
+	FULLSCREEN = 1;
+	WINDOW_WIDTH = 1280;
+	WINDOW_HEIGHT = 720;
 
 	if(a == 0)
 	{
@@ -542,12 +559,18 @@ void load_keys(int a){
 		if (config == NULL)
 			config = fopen("config.dat", "r");	// fallback for legacy local config
 		if (config == NULL)
+		{
 			config = fopen("default.dat", "r");	// first-run fallback
+		}
 	}
-	else
+	else{
 		config = fopen("default.dat", "r");
+	}
 	if (config == NULL){					// check file opens
 		SDL_Log("Unable to open any config source\n");
+		set_sfx_volume(SFX_VOLUME);
+		set_music_volume(MUSIC_VOLUME);
+		save_keys();
 		return;
 	}
 	// try to read keyboard layout
@@ -600,6 +623,24 @@ void load_keys(int a){
 	}
 	
 	fclose (config);
+
+	// Reject corrupted/legacy-bad keymaps and recover from defaults.
+	for (i = 0; i < 10; ++i){
+		if (layout[i] == SDLK_UNKNOWN ||
+			SDL_GetScancodeFromKey(layout[i]) == SDL_SCANCODE_UNKNOWN){
+			layout_valid = 0;
+			break;
+		}
+	}
+	if (layout[MOUSE_ENABLE] != 0 && layout[MOUSE_ENABLE] != 1)
+		layout_valid = 0;
+
+	if (!layout_valid && a == 0){
+		SDL_Log("Invalid key layout in user config; restoring defaults");
+		load_keys(1);
+		return;
+	}
+
 	set_sfx_volume(SFX_VOLUME);
 	set_music_volume(MUSIC_VOLUME);
 	save_keys();
