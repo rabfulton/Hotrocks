@@ -541,11 +541,13 @@ void load_keys(int a){
 			config = fopen(config_path, "r");	// load user-specific config first
 		if (config == NULL)
 			config = fopen("config.dat", "r");	// fallback for legacy local config
+		if (config == NULL)
+			config = fopen("default.dat", "r");	// first-run fallback
 	}
 	else
 		config = fopen("default.dat", "r");
 	if (config == NULL){					// check file opens
-		SDL_Log("Unable to open config.dat\n");
+		SDL_Log("Unable to open any config source\n");
 		return;
 	}
 	// try to read keyboard layout
