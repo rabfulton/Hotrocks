@@ -26,6 +26,7 @@ float v_dot(Vector a, Vector b);
 Vector v_sub(Vector a, Vector b);
 
 extern GLfloat *part_colors;
+extern GLfloat *part_colors_inner;
 extern GLfloat *part_vertices;
 //extern GLfloat *asteroid_offsets;
 extern screen_t screen;
@@ -275,6 +276,7 @@ void allocate_memory(){
 	explode = realloc(explode, NO_OF_EXPLOSIONS * sizeof(explosion_t));	
 	parts = realloc(parts, MAX_PARTICLES * sizeof(particle_t));
 	part_colors = realloc(part_colors, 4 * MAX_PARTICLES * sizeof(float));
+	part_colors_inner = realloc(part_colors_inner, 4 * MAX_PARTICLES * sizeof(float));
 	part_vertices = realloc(part_vertices, 2 * MAX_PARTICLES * sizeof(float));
 }
 
@@ -652,6 +654,7 @@ void init_particles(){
 		float direction;
 		parts[i].state = 0;
 		parts[i].age = ((float)rand()/(float)RAND_MAX);
+		parts[i].tint = 0;
 		speed = ((float)rand()/(float)RAND_MAX) * 8 * screen.obj_scale_factor;
 		direction = ((float)rand()/(float)RAND_MAX) * 2.0 * PI;
 		parts[i].velocity.x = speed * cosf(direction);
@@ -665,7 +668,7 @@ void init_particles(){
 	}
 }
 
-void set_parts(int x, int y){
+static void set_parts_tinted(int x, int y, Uint8 tint){
 
 	// simple particle engine that handles NO_OF_EXPLOSIONS simultaneous events
 	
@@ -683,8 +686,19 @@ void set_parts(int x, int y){
 		parts[i].position.y = y;
 		parts[i].state = 1;
 		parts[i].age = ((float)rand()/(float)RAND_MAX);
+		parts[i].tint = tint;
 	}		
-}		
+}
+
+void set_parts(int x, int y){
+
+	set_parts_tinted(x, y, 0);
+}
+
+void set_enemy_parts(int x, int y){
+
+	set_parts_tinted(x, y, 1);
+}
 
 void init_sound(){
 
@@ -1767,10 +1781,10 @@ void collect_powerup(enemy_t *en, Player_t *p, int id){
 	else if (type == 1){
 		p->lives += 1;
 	}
-	else if (type == 2){
-		for (int i = 0; i < no_of_enemy; ++i){
-			set_parts(en[i].sh.position.x, en[i].sh.position.y);
-		}
+		else if (type == 2){
+			for (int i = 0; i < no_of_enemy; ++i){
+				set_enemy_parts(en[i].sh.position.x, en[i].sh.position.y);
+			}
 
 		play_sound(HIT, 0);
 		no_of_enemy = 0;

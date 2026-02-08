@@ -19,6 +19,7 @@ TTF_Font *score_font = NULL;
 TTF_Font *title_font = NULL;
 TTF_Font *menu_font = NULL;
 GLfloat *part_colors = NULL;
+GLfloat *part_colors_inner = NULL;
 GLfloat *part_vertices = NULL;
 GLfloat asteroid_offsets[ASTEROID_VERTS] = {
 													0, 		0, 
@@ -311,6 +312,7 @@ void close_sdl(){
 	free(explode);
 	free(parts);
 	free(part_colors);
+	free(part_colors_inner);
 	free(part_vertices);
 	TTF_Quit();
 	IMG_Quit();
@@ -785,10 +787,30 @@ void draw_particles(){
 
 	for (int i = 0; i < MAX_PARTICLES; ++i){
 		if (parts[i].state == 1){
-			part_colors[ci] = 1.2 * parts[i].age;		// calculate colours of each living particle and put in array
-			part_colors[ci+1] = 0.7 * parts[i].age;
-			part_colors[ci+2] = 0.6 * parts[i].age;
-			part_colors[ci+3] = 0.5 * parts[i].age;
+			if (parts[i].tint == 1){
+				// enemy explosion: darker outer green + brighter inner green
+				part_colors[ci] = 0.12f * parts[i].age;
+				part_colors[ci+1] = 0.58f * parts[i].age;
+				part_colors[ci+2] = 0.20f * parts[i].age;
+				part_colors[ci+3] = 0.45f * parts[i].age;
+
+				part_colors_inner[ci] = 0.35f * parts[i].age;
+				part_colors_inner[ci+1] = 1.10f * parts[i].age;
+				part_colors_inner[ci+2] = 0.45f * parts[i].age;
+				part_colors_inner[ci+3] = 0.75f * parts[i].age;
+			}
+			else{
+				// default explosion: darker outer ember + brighter inner core
+				part_colors[ci] = 0.70f * parts[i].age;
+				part_colors[ci+1] = 0.35f * parts[i].age;
+				part_colors[ci+2] = 0.25f * parts[i].age;
+				part_colors[ci+3] = 0.45f * parts[i].age;
+
+				part_colors_inner[ci] = 1.20f * parts[i].age;
+				part_colors_inner[ci+1] = 0.70f * parts[i].age;
+				part_colors_inner[ci+2] = 0.60f * parts[i].age;
+				part_colors_inner[ci+3] = 0.50f * parts[i].age;
+			}
 			ci = ci + 4;
 
 			part_vertices[vi] = parts[i].position.x;		// insert particles position to vertex array
@@ -799,14 +821,14 @@ void draw_particles(){
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
 
-	glPointSize(2.0f * screen.obj_scale_factor);
+	glPointSize(5.0f * screen.obj_scale_factor);
 	glVertexPointer(2, GL_FLOAT, 0, part_vertices);
 	glColorPointer(4, GL_FLOAT, 0, part_colors);
 	glDrawArrays(GL_POINTS, 0, vi/2);
 
-	glPointSize(5.0f * screen.obj_scale_factor);
+	glPointSize(2.0f * screen.obj_scale_factor);
 	glVertexPointer(2, GL_FLOAT, 0, part_vertices);
-	glColorPointer(4, GL_FLOAT, 0, part_colors);
+	glColorPointer(4, GL_FLOAT, 0, part_colors_inner);
 	glDrawArrays(GL_POINTS, 0, vi/2);
 	
 	glDisableClientState(GL_VERTEX_ARRAY);

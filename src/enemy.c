@@ -218,7 +218,7 @@ void near_asteroid(enemy_t *en, asteroid_t *field){
 void kill_enemy(enemy_t *en, int id){
 
 	play_sound(HIT, 0);
-	set_parts(en[id].sh.position.x, en[id].sh.position.y);
+	set_enemy_parts(en[id].sh.position.x, en[id].sh.position.y);
 	
 	memmove(&en[id], &en[no_of_enemy-1], sizeof(enemy_t));
 	no_of_enemy -= 1;

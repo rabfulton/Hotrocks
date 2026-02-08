@@ -64,6 +64,7 @@ typedef struct {Vector velocity;
 				Vector position;
 				float age;
 				int state;
+				Uint8 tint;
 				}particle_t;
 				
 typedef struct {
@@ -165,6 +166,7 @@ void set_window_resolution(int width, int height);
 void allocate_memory(void);
 // EVENTS
 void set_parts(int x, int y);
+void set_enemy_parts(int x, int y);
 void create_bullet(bullet_t *, ship_t *);
 void create_bullet_rel(bullet_t *bulls, ship_t *sh);
 void split_asteroid(asteroid_t *field, int a);
