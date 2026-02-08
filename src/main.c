@@ -6,6 +6,13 @@
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <limits.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 Sound sound[MAX_SOUNDS];				// Array for sounds index				
 int layout[11];							// Array for current keymap
 int run_state;
@@ -82,6 +89,64 @@ static int is_module_extension(const char *name){
 		   !SDL_strcasecmp(ext, "symmod");
 }
 
+static int mkdir_p(const char *path){
+
+	char tmp[PATH_MAX];
+	size_t len;
+
+	if (path == NULL || path[0] == '\0')
+		return -1;
+
+	len = SDL_strlcpy(tmp, path, sizeof(tmp));
+	if (len == 0 || len >= sizeof(tmp))
+		return -1;
+
+	if (tmp[len - 1] == '/')
+		tmp[len - 1] = '\0';
+
+	for (char *p = tmp + 1; *p; ++p){
+		if (*p == '/'){
+			*p = '\0';
+			if (mkdir(tmp, 0700) != 0 && errno != EEXIST)
+				return -1;
+			*p = '/';
+		}
+	}
+
+	if (mkdir(tmp, 0700) != 0 && errno != EEXIST)
+		return -1;
+
+	return 0;
+}
+
+static int get_user_mods_dir(char *out, size_t out_size, int create_dir){
+
+	char base[PATH_MAX];
+	const char *xdg_data = SDL_getenv("XDG_DATA_HOME");
+
+	if (xdg_data && xdg_data[0] != '\0'){
+		if (SDL_snprintf(base, sizeof(base), "%s", xdg_data) >= (int)sizeof(base))
+			return 0;
+	}
+	else{
+		const char *home = SDL_getenv("HOME");
+		if (home == NULL || home[0] == '\0')
+			return 0;
+		if (SDL_snprintf(base, sizeof(base), "%s/.local/share", home) >= (int)sizeof(base))
+			return 0;
+	}
+
+	if (SDL_snprintf(out, out_size, "%s/hotrocks/mods", base) >= (int)out_size)
+		return 0;
+
+	if (create_dir && mkdir_p(out) != 0){
+		SDL_Log("Unable to create user mod directory: %s", out);
+		return 0;
+	}
+
+	return 1;
+}
+
 static void free_mod_list(char **mods, int count){
 
 	if (!mods)
@@ -92,16 +157,12 @@ static void free_mod_list(char **mods, int count){
 	free(mods);
 }
 
-static int scan_mod_directory(char ***mods_out, int *count_out){
+static int append_mod_directory(const char *dir_path, char ***mods, int *count){
 
-	DIR *dir = opendir("./mods");
-	if (!dir){
-		SDL_Log("mods directory unavailable: %s", strerror(errno));
-		return 0;
-	}
+	DIR *dir = opendir(dir_path);
+	if (!dir)
+		return 1;
 
-	char **mods = NULL;
-	int count = 0;
 	struct dirent *entry = NULL;
 	while ((entry = readdir(dir)) != NULL){
 		if (entry->d_name[0] == '.')
@@ -109,33 +170,53 @@ static int scan_mod_directory(char ***mods_out, int *count_out){
 		if (!is_module_extension(entry->d_name))
 			continue;
 
-		char path[512];
-		snprintf(path, sizeof(path), "./mods/%s", entry->d_name);
+		char path[PATH_MAX];
+		if (SDL_snprintf(path, sizeof(path), "%s/%s", dir_path, entry->d_name) >= (int)sizeof(path))
+			continue;
+
 		SDL_RWops *f = SDL_RWFromFile(path, "rb");
 		if (!f)
 			continue;
 		SDL_RWclose(f);
 
-		char **next = realloc(mods, (size_t)(count + 1) * sizeof(char *));
+		char **next = realloc(*mods, (size_t)(*count + 1) * sizeof(char *));
 		if (!next){
-			free_mod_list(mods, count);
 			closedir(dir);
 			return 0;
 		}
-		mods = next;
-		mods[count] = SDL_strdup(path);
-		if (!mods[count]){
-			free_mod_list(mods, count);
+		*mods = next;
+		(*mods)[*count] = SDL_strdup(path);
+		if (!(*mods)[*count]){
 			closedir(dir);
 			return 0;
 		}
-		++count;
+		++(*count);
 	}
 	closedir(dir);
+	return 1;
+}
+
+static int scan_mod_directory(char ***mods_out, int *count_out){
+
+	char **mods = NULL;
+	int count = 0;
+
+	char user_mod_dir[PATH_MAX];
+	if (get_user_mods_dir(user_mod_dir, sizeof(user_mod_dir), 1)){
+		if (!append_mod_directory(user_mod_dir, &mods, &count)){
+			free_mod_list(mods, count);
+			return 0;
+		}
+	}
+
+	if (!append_mod_directory("./mods", &mods, &count)){
+		free_mod_list(mods, count);
+		return 0;
+	}
 
 	*mods_out = mods;
 	*count_out = count;
-	return 1;
+	return count > 0;
 }
 
 static void clear_current_music(void){

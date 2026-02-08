@@ -1,7 +1,16 @@
 //#include <unistd.h> 		// for file i/o
 #include <string.h>			//
 #include <ctype.h>			// for data validation
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <limits.h>
 #include "main.h"
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 extern SDL_Window* mywindow;				// the usual window
 extern screen_t screen;
@@ -14,6 +23,71 @@ typedef struct {
 static void sort_it(ScoreData *s);			// sort the high score table
 static void write_scores(ScoreData *s);		// output score table to file
 static void get_player(ScoreData *s, char);	// get players name, integer for player number 1 0r 2
+static int mkdir_p(const char *path);
+static int get_user_highscore_path(char *out, size_t out_size, int create_dir);
+
+static int mkdir_p(const char *path){
+
+	char tmp[PATH_MAX];
+	size_t len;
+
+	if (path == NULL || path[0] == '\0')
+		return -1;
+
+	len = SDL_strlcpy(tmp, path, sizeof(tmp));
+	if (len == 0 || len >= sizeof(tmp))
+		return -1;
+
+	if (tmp[len - 1] == '/')
+		tmp[len - 1] = '\0';
+
+	for (char *p = tmp + 1; *p; ++p){
+		if (*p == '/'){
+			*p = '\0';
+			if (mkdir(tmp, 0700) != 0 && errno != EEXIST)
+				return -1;
+			*p = '/';
+		}
+	}
+
+	if (mkdir(tmp, 0700) != 0 && errno != EEXIST)
+		return -1;
+
+	return 0;
+}
+
+static int get_user_highscore_path(char *out, size_t out_size, int create_dir){
+
+	char base[PATH_MAX];
+	const char *xdg_data = SDL_getenv("XDG_DATA_HOME");
+
+	if (xdg_data && xdg_data[0] != '\0'){
+		if (SDL_snprintf(base, sizeof(base), "%s", xdg_data) >= (int)sizeof(base))
+			return 0;
+	}
+	else{
+		const char *home = SDL_getenv("HOME");
+		if (home == NULL || home[0] == '\0')
+			return 0;
+		if (SDL_snprintf(base, sizeof(base), "%s/.local/share", home) >= (int)sizeof(base))
+			return 0;
+	}
+
+	if (create_dir){
+		char data_dir[PATH_MAX];
+		if (SDL_snprintf(data_dir, sizeof(data_dir), "%s/hotrocks", base) >= (int)sizeof(data_dir))
+			return 0;
+		if (mkdir_p(data_dir) != 0){
+			SDL_Log("Unable to create highscore directory: %s", data_dir);
+			return 0;
+		}
+	}
+
+	if (SDL_snprintf(out, out_size, "%s/hotrocks/highscore.dat", base) >= (int)out_size)
+		return 0;
+
+	return 1;
+}
 
 void high_scores(int p1score, int p2score, GLuint tex){
 
@@ -34,6 +108,7 @@ void high_scores(int p1score, int p2score, GLuint tex){
 	ScoreData s[10];		/* array of structs */
 	ScoreData *s_ptr;
 	SDL_RWops * highscores;
+	char highscore_path[PATH_MAX];
 	play_sound(HYPER, 0);
 
 	s_ptr = s;
@@ -45,7 +120,11 @@ void high_scores(int p1score, int p2score, GLuint tex){
 		s[i].points = 0;
 	}
 
-	highscores = SDL_RWFromFile("highscore.dat", "r");		/* open for reading, use rb for non text */
+	highscores = NULL;
+	if (get_user_highscore_path(highscore_path, sizeof(highscore_path), 0))
+		highscores = SDL_RWFromFile(highscore_path, "r");	/* user-specific scores */
+	if (highscores == NULL)
+		highscores = SDL_RWFromFile("highscore.dat", "r");	/* fallback for legacy local scores */
 
 	if (highscores == NULL)								/* check file opens */
 		return;
@@ -54,6 +133,7 @@ void high_scores(int p1score, int p2score, GLuint tex){
 
 	for (i = 0; i < 10; ++i) {
 		count = 0;
+		c = '\0';
 		while (c != ' ') {
 			check = SDL_RWread(highscores, &c, sizeof(char), 1);
 			if (!check) break;
@@ -168,9 +248,17 @@ void write_scores(ScoreData *s){
 	SDL_RWops * highscores;
 	int size;
 	char buffer[33];
+	char highscore_path[PATH_MAX];
 	
-	
-	highscores = SDL_RWFromFile("highscore.dat", "w");
+	highscores = NULL;
+	if (get_user_highscore_path(highscore_path, sizeof(highscore_path), 1))
+		highscores = SDL_RWFromFile(highscore_path, "w");
+	if (highscores == NULL)
+		highscores = SDL_RWFromFile("highscore.dat", "w");
+	if (highscores == NULL){
+		SDL_Log("Unable to open highscore file for writing");
+		return;
+	}
 	
 	for(i = 0; i < 10; ++i){
 		size = sprintf(buffer, "%s %d\n", s[i].name, s[i].points);

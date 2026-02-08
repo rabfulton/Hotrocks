@@ -1,5 +1,14 @@
 
 #include "main.h"
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <limits.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 extern SDL_Window* mywindow;				// the usual window
 extern screen_t screen;
@@ -16,6 +25,71 @@ void set_detail(GLuint tex);
 void set_mouse(GLuint tex);
 void set_audio(GLuint tex);
 void set_resolution(GLuint tex);
+static int mkdir_p(const char *path);
+static int get_user_config_path(char *out, size_t out_size, int create_dir);
+
+static int mkdir_p(const char *path){
+
+	char tmp[PATH_MAX];
+	size_t len;
+
+	if (path == NULL || path[0] == '\0')
+		return -1;
+
+	len = SDL_strlcpy(tmp, path, sizeof(tmp));
+	if (len == 0 || len >= sizeof(tmp))
+		return -1;
+
+	if (tmp[len - 1] == '/')
+		tmp[len - 1] = '\0';
+
+	for (char *p = tmp + 1; *p; ++p){
+		if (*p == '/'){
+			*p = '\0';
+			if (mkdir(tmp, 0700) != 0 && errno != EEXIST)
+				return -1;
+			*p = '/';
+		}
+	}
+
+	if (mkdir(tmp, 0700) != 0 && errno != EEXIST)
+		return -1;
+
+	return 0;
+}
+
+static int get_user_config_path(char *out, size_t out_size, int create_dir){
+
+	char base[PATH_MAX];
+	const char *xdg_config = SDL_getenv("XDG_CONFIG_HOME");
+
+	if (xdg_config && xdg_config[0] != '\0'){
+		if (SDL_snprintf(base, sizeof(base), "%s", xdg_config) >= (int)sizeof(base))
+			return 0;
+	}
+	else{
+		const char *home = SDL_getenv("HOME");
+		if (home == NULL || home[0] == '\0')
+			return 0;
+		if (SDL_snprintf(base, sizeof(base), "%s/.config", home) >= (int)sizeof(base))
+			return 0;
+	}
+
+	if (create_dir){
+		char config_dir[PATH_MAX];
+		if (SDL_snprintf(config_dir, sizeof(config_dir), "%s/hotrocks", base) >= (int)sizeof(config_dir))
+			return 0;
+		if (mkdir_p(config_dir) != 0){
+			SDL_Log("Unable to create config directory: %s", config_dir);
+			return 0;
+		}
+	}
+
+	if (SDL_snprintf(out, out_size, "%s/hotrocks/config.dat", base) >= (int)out_size)
+		return 0;
+
+	return 1;
+}
 
 int main_menu(GLuint tex){
 
@@ -458,9 +532,16 @@ void load_keys(int a){
 
 	int i, check = 0;
 	FILE * config;							// pointer to config.dat
+	char config_path[PATH_MAX];
 
 	if(a == 0)
-		config = fopen("config.dat", "r");		// open for reading, use rb for non text
+	{
+		config = NULL;
+		if (get_user_config_path(config_path, sizeof(config_path), 0))
+			config = fopen(config_path, "r");	// load user-specific config first
+		if (config == NULL)
+			config = fopen("config.dat", "r");	// fallback for legacy local config
+	}
 	else
 		config = fopen("default.dat", "r");
 	if (config == NULL){					// check file opens
@@ -526,8 +607,18 @@ void save_keys(){
 
 	int i, check = 0;
 	FILE * config;		/* pointer to highscore.dat */
+	char config_path[PATH_MAX];
 
-	config = fopen("config.dat", "w");		/* open for writing, use wb for binary format */
+	if (!get_user_config_path(config_path, sizeof(config_path), 1)){
+		SDL_Log("Unable to determine writable config path");
+		return;
+	}
+
+	config = fopen(config_path, "w");		/* open for writing, use wb for binary format */
+	if (config == NULL){
+		SDL_Log("Unable to open %s for writing\n", config_path);
+		return;
+	}
 	
 	for(i = 0; i < 10; ++i){
 		

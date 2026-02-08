@@ -41,8 +41,9 @@ Install from AUR:
 
 Place all your favorite mod files in:
 
-- `/usr/share/hotrocks/mods` (packaged install)
-- `./mods` (running from source tree)
+- `$XDG_DATA_HOME/hotrocks/mods` (or `~/.local/share/hotrocks/mods`)
+
+Bundled mods are also loaded from `./mods` (source tree or packaged data dir).
 
 You can get more module files at [The Mod Archive](https://modarchive.org/).
 
@@ -112,8 +113,10 @@ Run from the project root so relative paths resolve:
 The game expects:
 
 - assets in `./data`
-- module music in `./mods`
-- config in `./config.dat`
+- bundled module music in `./mods`
+- user module music in `$XDG_DATA_HOME/hotrocks/mods`
+- config in `$XDG_CONFIG_HOME/hotrocks/config.dat` (or `~/.config/hotrocks/config.dat`)
+- highscores in `$XDG_DATA_HOME/hotrocks/highscore.dat` (or `~/.local/share/hotrocks/highscore.dat`)
 
 ## Packaging (Arch Linux)
 
